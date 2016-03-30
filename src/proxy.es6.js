@@ -16,12 +16,12 @@ const server = net.createServer(function(downstream) {
 server.listen(port, () => console.log(`proxy server started on port ${port}`));
 
 async function printAsync(value, ms) {
-  await timeout(ms);
-  console.log(value)
+  let result = await timeout(ms);
+  console.log(value + result)
 }
 
 function timeout(ms) {
-  return new Promise((resolve, reject) => setTimeout(resolve, ms));
+  return new Promise((resolve, reject) => setTimeout(() => resolve("huangtao"), ms));
 }
 
-printAsync("hello,world", 50);
+printAsync("hello,world ", 1000);
