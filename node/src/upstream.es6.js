@@ -5,7 +5,6 @@ const port = 9001;
 
 const server = net.createServer(function(client) {
   client
-    .pipe(es.split())
     .pipe(es.map(function(data, cb) {
       console.log("receive data : " + data)
       data += "<<END>>"

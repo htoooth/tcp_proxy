@@ -10,8 +10,17 @@ const upstreamPort = 9001;
 
 function fromString(string) {
   return miss.from((size, next) => {
+    // if there's no more content
+    // left in the string, close the stream.
     if (string.length <= 0) return next(null, null)
-    next(null, string + "\r\n");
+
+    // Pull in a new chunk of text,
+    // removing it from the string.
+    var chunk = string.slice(0, size)
+    string = string.slice(size)
+
+    // Emit "chunk" from the stream.
+    next(null, chunk)
   });
 };
 
@@ -29,7 +38,7 @@ upstream.on("error", function(error) {
 const queue = ac.queue((task, cb) => {
   console.log(`command:${task.cmd}`)
   fromString(task.cmd)
-    .on("end",function() {
+    .on("end", function() {
       cb();
     })
     .pipe(upstream, { "end": false })
@@ -50,7 +59,7 @@ const server = net.createServer(function(downstream) {
       this.push(data);
 
       cb();
-    }), { "end": false })
+    }))
     .pipe(miss.through.obj((chunk, enc, cb) => {
       console.log("commnd:" + chunk.cmd);
 
@@ -59,7 +68,7 @@ const server = net.createServer(function(downstream) {
       });
 
       cb();
-    }), { "end": false });
+    }));
 });
 
 server.listen(port, () => console.log(`proxy server started on port ${port}`));
