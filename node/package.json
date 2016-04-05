@@ -4,14 +4,20 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "babel src -w -d dist"
+    "build": "babel src -w -d dist",
+    "up":"node dist/upstream.es6.js",
+    "proxy":"node dist/proxy.es6.js",
+    "down":"node dist/downstream.es6.js",
+    "start": "npm run up & npm run proxy & npm run down"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "async": "^2.0.0-rc.2",
     "babel-runtime": "^6.6.1",
     "bluebird": "^3.3.4",
     "event-stream": "^3.3.2",
+    "mississippi": "^1.2.0",
     "ramda": "^0.20.0",
     "rx": "^4.1.0"
   },
