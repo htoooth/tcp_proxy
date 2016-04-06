@@ -1,85 +1,67 @@
-import net from 'net'
-import Promise from 'bluebird'
-import ac from 'async'
-import miss from 'mississippi'
-import es from "event-stream"
+import net from 'net';
+import ac from 'async';
+import miss from 'mississippi';
+import split from "split2"
 
-const port = 9000;
-const upstreamServer = "localhost";
-const upstreamPort = 9001;
+miss.split = split;
 
-function fromString(string) {
+miss.fromString = (string) => {
   return miss.from((size, next) => {
-    // if there's no more content
-    // left in the string, close the stream.
     if (string.length <= 0) return next(null, null)
 
-    // Pull in a new chunk of text,
-    // removing it from the string.
     var chunk = string.slice(0, size)
     string = string.slice(size)
 
-    // Emit "chunk" from the stream.
     next(null, chunk)
   });
 };
 
-const upstream = net.connect({ server: upstreamServer, port: upstreamPort }, function() {
-  console.log("upstream connect ok");
-});
+miss.debug = (log, prefix) => {
+  return miss.through((chunk, _, cb) => {
+    log(`${prefix}::${chunk.toString()}`)
+    cb(null, chunk);
+  });
+};
 
-upstream.setTimeout(10000);
-upstream.setKeepAlive(true, 3000);
+const DEFAULTS = {
+  host: "localhost",
+  port: 9000
+};
 
-upstream.on("error", function(error) {
-  console.log(error);
-});
+let proxy = function(options) {
+  let opts = Object.assign({}, DEFAULTS, options);
 
-const queue = ac.queue((task, cb) => {
-  console.log(`command:${task.cmd}`)
-  fromString(task.cmd)
-    .on("end", function() {
-      cb();
-    })
-    .pipe(upstream, { "end": false })
-    .pipe(task.client, { "end": false });
-}, 1);
+  const queue = ac.queue((task, cb) => {
+    let upstream = net.connect({ server: opts.host, port: opts.port });
 
-const server = net.createServer(function(downstream) {
-  downstream
-    .pipe(es.split())
-    .pipe(miss.through.obj(function(chunk, enc, cb) {
+    miss.fromString(task.cmd)
+      .pipe(miss.debug(console.log, "downstream"))
+      .pipe(upstream)
+      .on("error", _ => console.log(error))
+      .on("end", _ => cb())
+      .pipe(miss.debug(console.log, "__upstream"))
+      .pipe(task.client, { "end": false })
+      .on("close", _ => console.log("client close"))
+      .on("error", _ => console.log("client error"))
+  }, 1);
 
-      console.log("receive:" + chunk);
-      let data = {
-        cmd: chunk,
-        client: downstream
-      };
+  const server = net.createServer(function(downstream) {
+    downstream
+      .pipe(miss.split())
+      .pipe(miss.through.obj(function(chunk, _, cb) {
+        let data = {
+          cmd: chunk,
+          client: downstream
+        };
 
-      this.push(data);
+        this.push(data);
 
-      cb();
-    }))
-    .pipe(miss.through.obj((chunk, enc, cb) => {
-      console.log("commnd:" + chunk.cmd);
+        cb();
+      }))
+      .pipe(miss.through.obj((chunk, _, cb) => queue.push(chunk, _ => cb())));
+  });
 
-      queue.push(chunk, (err) => {
-        console.log("finish processing");
-      });
+  return server;
+};
 
-      cb();
-    }));
-});
-
-server.listen(port, () => console.log(`proxy server started on port ${port}`));
-
-async function printAsync(value, ms) {
-  let result = await timeout(ms);
-  console.log(value + result)
-}
-
-function timeout(ms) {
-  return new Promise((resolve, reject) => setTimeout(() => resolve("huangtao"), ms));
-}
-
-printAsync("hello,world ", 1000);
+module.exports = proxy

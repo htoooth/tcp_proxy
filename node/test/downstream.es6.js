@@ -1,12 +1,12 @@
 import net from "net"
 
 const server = 'localhost';
-const serverPort = 9000;
+const serverPort = 9001;
 
 const client = net.connect({ server: server, port: serverPort }, function() {
   console.log("client connect");
   console.log("send data to server");
-  client.write('greeting from client socket\njkfdsklaljkdfskla\nfdskajfkdlsajkldfjslk\n');
+  client.write('greeting from client socket\njkfdsklaljkdfskla\nHUNGAGTSFJDKSLJ\n');
   client.write("fd'sa'df'sa'df'as'\n");
 });
 

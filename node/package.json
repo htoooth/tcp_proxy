@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "build": "babel src -w -d dist",
-    "up":"node dist/upstream.es6.js",
-    "proxy":"node dist/proxy.es6.js",
-    "down":"node dist/downstream.es6.js",
+    "up": "babel-node test/upstream.es6.js",
+    "proxy": "babel-node test/index.es6.js",
+    "down": "babel-node test/downstream.es6.js",
     "start": "npm run up & npm run proxy & npm run down"
   },
   "author": "",
@@ -16,10 +16,11 @@
     "async": "^2.0.0-rc.2",
     "babel-runtime": "^6.6.1",
     "bluebird": "^3.3.4",
-    "event-stream": "^3.3.2",
+    "eventemitter3": "^1.2.0",
     "mississippi": "^1.2.0",
     "ramda": "^0.20.0",
-    "rx": "^4.1.0"
+    "rx": "^4.1.0",
+    "split2": "^2.0.1"
   },
   "devDependencies": {
     "babel-cli": "^6.6.5",
