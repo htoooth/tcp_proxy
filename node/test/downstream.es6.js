@@ -24,3 +24,12 @@ client.on("error", function(err) {
 client.on("end", function() {
   console.log("client disconnected");
 });
+
+
+setTimeout(function() {
+  client.write("fdkasldfjasklfjdklasjdfklsajdfkljsdfklsajkldfjsaklfjdklsajdfkl\r\n");
+}, 2000);
+
+setTimeout(function() {
+  client.write("fdkasldfjask\r\nlfjdklasjdfklsajdfkljsdfklsajkldfjsaklfjdklsajdfkl\r\n");
+}, 10000);

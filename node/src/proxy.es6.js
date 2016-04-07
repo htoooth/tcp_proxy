@@ -37,16 +37,26 @@ let proxy = function(options) {
     miss.fromString(task.cmd)
       .pipe(miss.debug(console.log, "downstream"))
       .pipe(upstream)
-      .on("error", _ => console.log(error))
-      .on("end", _ => cb())
+      .on("error", _ => {
+        console.log(error);
+        upstream.destroy();
+      })
+      .on("end", _ => {
+        console.log("upstream end");
+        cb();
+      })
+      .on("close", _ => console.log("upstream has closed."))
       .pipe(miss.debug(console.log, "__upstream"))
       .pipe(task.client, { "end": false })
-      .on("close", _ => console.log("client close"))
-      .on("error", _ => console.log("client error"))
   }, 1);
 
   const server = net.createServer(function(downstream) {
     downstream
+      .on("close", _ => console.log("downstream has closed."))
+      .on("error", _ => {
+        console.log("downstream has a error.");
+        downstream.destroy();
+      })
       .pipe(miss.split())
       .pipe(miss.through.obj(function(chunk, _, cb) {
         let data = {
@@ -58,7 +68,9 @@ let proxy = function(options) {
 
         cb();
       }))
-      .pipe(miss.through.obj((chunk, _, cb) => queue.push(chunk, _ => cb())));
+      .pipe(miss.through.obj((chunk, _, cb) => queue.push(chunk, _ => {
+        cb();
+      })));
   });
 
   return server;
