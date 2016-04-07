@@ -1,5 +1,5 @@
 import net from "net";
-import miss from 'mississippi';
+import miss from 'mississippi2';
 
 const server = net.createServer(function(client) {
   client

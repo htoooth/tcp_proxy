@@ -1,20 +1,6 @@
 import net from 'net';
 import ac from 'async';
-import miss from 'mississippi';
-import split from "split2"
-
-miss.split = split;
-
-miss.fromString = (string) => {
-  return miss.from((size, next) => {
-    if (string.length <= 0) return next(null, null)
-
-    var chunk = string.slice(0, size)
-    string = string.slice(size)
-
-    next(null, chunk)
-  });
-};
+import miss from 'mississippi2';
 
 miss.debug = (log, prefix) => {
   return miss.through((chunk, _, cb) => {
@@ -34,7 +20,7 @@ let proxy = function(options) {
   const queue = ac.queue((task, cb) => {
     let upstream = net.connect({ server: opts.host, port: opts.port });
 
-    miss.fromString(task.cmd)
+    miss.fromValue(task.cmd)
       .pipe(miss.debug(console.log, "downstream"))
       .pipe(upstream)
       .on("error", _ => {
