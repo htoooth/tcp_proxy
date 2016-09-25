@@ -8,7 +8,10 @@
     "up": "babel-node test/upstream.es6.js",
     "proxy": "babel-node test/index.es6.js",
     "down": "babel-node test/downstream.es6.js",
-    "start": "npm run up & npm run proxy & npm run down"
+    "start": "npm run up & npm run proxy & npm run down",
+    "orm": "babel-node src/orm.es6.js",
+    "retry": "babel-node src/retry.es6.js",
+    "fs": "babel-node src/express.es6.js"
   },
   "author": "",
   "license": "MIT",
@@ -16,10 +19,14 @@
     "async": "^2.0.0-rc.2",
     "babel-runtime": "^6.6.1",
     "bluebird": "^3.3.4",
+    "chai": "^3.5.0",
     "eventemitter3": "^1.2.0",
+    "express": "^4.13.4",
     "mississippi2": "0.0.3",
     "ramda": "^0.20.0",
-    "rx": "^4.1.0"
+    "rx": "^4.1.0",
+    "rx-node": "^1.0.2",
+    "superagent": "^1.8.3"
   },
   "devDependencies": {
     "babel-cli": "^6.6.5",
