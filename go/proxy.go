@@ -25,43 +25,44 @@ func main() {
 		log.Fatal(err)
 	}
 
-	cmdchan := make(chan Command)
+	recevie_cmd_chan := make(chan Command)
 	addchan := make(chan Client)
 	rmchan := make(chan net.Conn)
 
-	go handleCmd(cmdchan, addchan, rmchan)
+	go handleClientCmd(recevie_cmd_chan, addchan, rmchan)
 
 	for {
-		conn, err := proxy.Accept()
+		client, err := proxy.Accept()
 
 		if err != nil {
 			log.Println(err)
 			continue
 		}
 
-		go handleConnection(conn, cmdchan, addchan, rmchan)
+		go handleClientConnection(client, recevie_cmd_chan, addchan, rmchan)
 	}
 }
 
-func handleConnection(conn net.Conn, cmdchan chan<- Command, addchan chan<- Client, rmchan chan<- net.Conn) {
+func handleClientConnection(conn net.Conn, cmdChan chan<- Command, addChan chan<- Client, rmChan chan<- net.Conn) {
 
 	outchan := make(chan string)
 	inchan := make(chan string)
 
 	client := Client{conn, outchan}
 
-	addchan <- client
+	addChan <- client
 
 	go func() {
 		defer close(inchan)
+		defer conn.Close()
 
 		// auth
 		reader := bufio.NewReader(conn)
 
-		fmt.Printf("New user has connected system.\n");
+		fmt.Printf("New user has connected system.\n")
 
 		for {
-			data , err := reader.ReadString('\n')
+			data, err := reader.ReadString('\n')
 			if err != nil {
 				break
 			}
@@ -78,8 +79,8 @@ LOOP:
 			if !ok {
 				break LOOP
 			}
-			cmdchan <- Command{client, data}
-		case data ,ok:= <-outchan:
+			cmdChan <- Command{client, data}
+		case data, ok := <-outchan:
 			if !ok {
 				break LOOP
 			}
@@ -95,28 +96,25 @@ LOOP:
 
 	fmt.Printf("Connection from %v closed.", conn.RemoteAddr())
 
-	rmchan <- conn
+	rmChan <- conn
 }
 
-func handleCmd(cmdChan <-chan Command, addChan <-chan Client, rmChan <-chan net.Conn) {
+func handleClientCmd(cmdChan <-chan Command, addChan <-chan Client, rmChan <-chan net.Conn) {
 	clients := make(map[net.Conn]chan<- string)
 
-	conn, err := net.Dial("tcp", "127.0.0.1:8001")
+	upstream, err := net.Dial("tcp", "127.0.0.1:8001")
+	defer upstream.Close()
 
-	if tcpConn,ok := conn.(* net.TCPConn);ok {
-		tcpConn.SetKeepAlive(true);
+	if tcpConn, ok := upstream.(*net.TCPConn); ok {
+		tcpConn.SetKeepAlive(true)
 	}
 
-	if(err != nil){
+	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
 	l := new(sync.Mutex)
-
-	if err != nil {
-		return
-	}
 
 	for {
 		select {
@@ -130,8 +128,8 @@ func handleCmd(cmdChan <-chan Command, addChan <-chan Client, rmChan <-chan net.
 			go func(cmd Command) {
 				l.Lock()
 
-				conn.Write([]byte(cmd.cmd))
-				reader := bufio.NewReader(conn)
+				upstream.Write([]byte(cmd.cmd))
+				reader := bufio.NewReader(upstream)
 				data, err := reader.ReadString('\n')
 
 				if err != nil {
